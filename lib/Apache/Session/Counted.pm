@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.17 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 09:34:19 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.18 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 09:35:01 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -50,7 +50,6 @@ I'm trying to band-aid by creating this directory";
   sub materialize {
     my $self    = shift;
     my $session = shift;
-    warn "calling storefilename from materialize";
     my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
     my($host) = $sessionID =~ /(?:([^:]+)(?::))/;
 
@@ -79,6 +78,7 @@ I'm trying to band-aid by creating this directory";
       warn sprintf "content[%s]", substr($dumper->stringify($content),0,80);
     }
 
+    warn "calling storefilename from materialize";
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
     if ( open $fh, "<$storefile\0" ) {
