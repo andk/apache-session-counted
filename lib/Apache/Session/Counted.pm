@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.14 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 07:20:12 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.15 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 08:11:36 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -113,12 +113,21 @@ I'm trying to band-aid by creating this directory";
     my $levels = $session->{args}{DirLevels} || 0;
     # here we depart from TreeStore:
     my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
-    my($host,$file) = $sessionID =~ /([^:]+:)?([\da-f]+)/;
+    my($host,$file) = $sessionID =~ /(?:([^:]+)(?::))?([\da-f]+)/;
     if ($host) {
       if ($session->{args}{HostID} eq $host) {
-        warn "HostID matches us";
+        # warn "HostID matches us";
       } else {
-        warn "Foreign HostID not yet implemented";
+        warn sprintf("Foreign HostID not yet implemented. hostID[%s]host[%s]",
+                     $session->{args}{HostID},
+                     $host);
+        my $surl;
+        if (exists $session->{args}{HostURL}) {
+          $surl = $session->{args}{HostURL}->($host,$sessionID);
+        } else {
+          $surl = sprintf "http://%s/?SESSIONID=%s", $host, $session_id;
+        }
+        warn "surl[$surl]";
       }
     }
     die "Too short ID part '$file' in session ID'" if length($file)<8;
@@ -292,10 +301,16 @@ colon. This can be used in a cluster environment so that a load
 balancer or other interested parties can retrieve the session data
 again.
 
-=item BadHostCallback
+=item HostURL
 
-A subroutine reference that gets called whenever the Session-ID we get
-doesn't match the HostID. The subroutine must return the 
+A callback that returns the service URL that can be called to get at
+the session data from another host. Two arguments are passed to this
+callback: HostID and Session-ID. The URL must return the serialized
+data in Storable's nfreeze format. The
+Apache::Session::Counted::Server module can be used to set such an URL
+up. If HostURL is not defined, the default is
+
+    sprintf "http://%s/?SESSIONID=%s", $host, $session_id;
 
 =back
 
