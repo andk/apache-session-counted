@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.18 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 09:35:01 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 09:49:58 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -169,16 +169,6 @@ sub TIEHASH {
 
   my $session_id = shift;
   my $args       = shift || {};
-
-  # Make sure that the arguments to tie make sense
-  # No. Don't Waste Time.
-  # $class->validate_id($session_id);
-  # if(ref $args ne "HASH") {
-  #   die "Additional arguments should be in the form of a hash reference";
-  # }
-
-  #Set-up the data structure and make it an object
-  #of our class
 
   my $self = {
               args         => $args,
