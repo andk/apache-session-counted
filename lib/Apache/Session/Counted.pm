@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.13 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 06:31:12 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.14 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 07:20:12 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -57,7 +57,8 @@ I'm trying to band-aid by creating this directory";
       close $fh or die $!;
     } else {
       warn "Could not open file $storefile for reading: $!";
-      $session->{serialized} = $session->{serialize}->({});
+      $session->{data} = {};
+      $session->{serialized} = $session->{serialize}->($session);
     }
   }
 
@@ -112,7 +113,14 @@ I'm trying to band-aid by creating this directory";
     my $levels = $session->{args}{DirLevels} || 0;
     # here we depart from TreeStore:
     my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
-    my($file) = $sessionID =~ /^([\da-f]+)/;
+    my($host,$file) = $sessionID =~ /([^:]+:)?([\da-f]+)/;
+    if ($host) {
+      if ($session->{args}{HostID} eq $host) {
+        warn "HostID matches us";
+      } else {
+        warn "Foreign HostID not yet implemented";
+      }
+    }
     die "Too short ID part '$file' in session ID'" if length($file)<8;
     while ($levels) {
       $file =~ s|((..){$levels})|$1/|;
