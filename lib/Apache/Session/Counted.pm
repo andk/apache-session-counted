@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 06:27:32 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.13 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 06:31:12 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -57,7 +57,7 @@ I'm trying to band-aid by creating this directory";
       close $fh or die $!;
     } else {
       warn "Could not open file $storefile for reading: $!";
-      $session->{serialized} = $session->{serialize}->(undef);
+      $session->{serialized} = $session->{serialize}->({});
     }
   }
 
