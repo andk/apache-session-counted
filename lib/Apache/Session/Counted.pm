@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 06:23:45 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 06:27:32 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -40,7 +40,7 @@ I'm trying to band-aid by creating this directory";
       print $fh $session->{serialized}; # $fh->print might fail in some perls
       close $fh;
     } else {
-      die "Giving up. Could not open file $storefile for writing: $!"
+      die "Giving up. Could not open file $storefile for writing: $!";
     }
   }
   *insert = \&update;
@@ -68,6 +68,7 @@ I'm trying to band-aid by creating this directory";
 
     my $self    = shift;
     my $session = shift;
+    my $storefile = $self->storefilename($session);
     unlink $storefile or
         warn "Object $storefile does not exist in the data store";
   }
