@@ -6,7 +6,7 @@ WriteMakefile(
 	      'VERSION_FROM' => 'lib/Apache/Session/Counted.pm',
               'PREREQ_PM' => {"Apache::Session"},
 	      dist => {
-		       PREOP => 'pod2text Counted.pm > $(DISTVNAME)/README',
+		       PREOP => 'pod2text lib/Apache/Session/Counted.pm > $(DISTVNAME)/README',
 		      }
 );
 
