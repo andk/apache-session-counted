@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.23 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 10:30:47 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.24 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 20:29:09 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -72,6 +72,8 @@ I'm trying to band-aid by creating this directory";
       my $ua = LWP::UserAgent->new;
       my $req = HTTP::Request::Common::GET $surl;
       $content = $ua->request($req)->content;
+      $session->{serialized} = $content;
+      return;
     }
 
     my $storefile = $self->storefilename($session);
