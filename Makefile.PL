@@ -4,10 +4,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
 	      'NAME'	=> 'Apache::Session::Counted',
 	      'VERSION_FROM' => 'lib/Apache/Session/Counted.pm',
-              'PREREQ_PM' => {"Apache::Session"},
-	      dist => {
-		       PREOP => 'rm -f $(DISTVNAME)/README; pod2text lib/Apache/Session/Counted.pm > $(DISTVNAME)/README',
-		      }
+              'PREREQ_PM' => {"Apache::Session"=>1},
 );
 
 sub MY::test {

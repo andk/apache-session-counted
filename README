@@ -1,5 +1,5 @@
-Apache::Session::Counted has a radical different view than the rest of
-the Apache::Session modules. In short the advantages are:
+Apache::Session::Counted has a radical different worldview than the
+rest of the Apache::Session modules. In short the advantages are:
 
     automatic lazy cleanup
     keeping track of transactions ("backbutton supported")

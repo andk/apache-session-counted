@@ -5,7 +5,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -29,7 +29,7 @@ use File::CounterFile;
 Maybe you haven't initialized the storage directory with
 use Apache::Session::Counted;
 Apache::Session::CountedStore->tree_init(\$dir,\$levels)";
-    $fh->print($session->{serialized});
+    print $fh $session->{serialized}; # $fh->print might fail in some perls
     close $fh;
   }
   *insert = \&update;
@@ -234,7 +234,8 @@ arguments have the following meaning:
 
 =item Directory, DirLevels
 
-Compare the desription in L<Apache::Session::TreeStore>.
+Works similar to filestore but as most file systems are slow on large
+directories, works in a tree of subdirectories.
 
 =item CounterFile
 
