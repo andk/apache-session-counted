@@ -11,18 +11,19 @@ package Apache::Session::Counted;
 
 use strict;
 use vars qw(@ISA);
-
 @ISA = qw(Apache::Session);
+use vars qw( $VERSION);
+$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
 
 {
   package Apache::Session::CountedStore;
-  use base 'Apache::Session::TreeStore';
+  use Apache::Session::TreeStore;
   use Symbol qw(gensym);
-#  use vars qw(@ISA);
-#  @ISA = qw(Apache::Session::TreeStore);
+  use vars qw(@ISA);
+  @ISA = qw(Apache::Session::TreeStore);
 
   sub insert { shift->SUPER::update(@_) };
   sub storefilename {
@@ -39,8 +40,7 @@ use File::CounterFile;
       $file =~ s|((..){$levels})|$1/|;
       $levels--;
     }
-    my $ret = "$dir/$file";
-    $ret;
+    "$dir/$file";
   }
 }
 
@@ -50,7 +50,8 @@ sub get_object_store {
 }
 
 sub get_lock_manager {
-  die "Should never be reached";
+  require Carp;
+  Carp::confess "Should never be reached";
 }
 
 sub TIEHASH {
@@ -92,7 +93,7 @@ sub TIEHASH {
     if ($session_id eq $self->{data}->{_session_id}) {
       # Fine. Validated. Kind of authenticated.
       # ready for a new session ID, keeping state otherwise.
-      # Nothing to do (?)
+      $self->make_modified if $self->{args}{AlwaysSave};
     } else {
       # oops, somebody else tried this ID, don't show him data.
       delete $self->{data};
@@ -100,6 +101,7 @@ sub TIEHASH {
     }
   }
   $self->{data}->{_session_id} = $self->generate_id();
+  # no make_new here, session-ID doesn't count as data
 
   return $self;
 }
@@ -134,7 +136,8 @@ Apache::Session::Counted - Session management via a File::CounterFile
  tie %s, 'Apache::Session::Counted', $sessionid, {
                                 Directory => <root of directory tree>,
                                 DirLevels => <number of dirlevels>,
-                                CounterFile => <filename for File::CounterFile>
+                                CounterFile => <filename for File::CounterFile>,
+                                AlwaysSave => <boolean>
                                                  }
 
 =head1 DESCRIPTION
@@ -146,11 +149,37 @@ expectations a little.
 A session in this module only lasts from one request to the next. At
 that point a new session starts. Data are not lost though, the only
 thing that is lost from one request to the next is the session-ID. So
-the only things you have to adjust in your code are those parts that
-rely on the session-ID as a fixed token per user. Everything else
-remains the same.
+the only things you have to treat differently than in Apache::Session
+are those parts that rely on the session-ID as a fixed token per user.
+Everything else remains the same. See below for a discussion what this
+model buys you.
 
-What this model buys you, is the following:
+The usage of the module is via a tie as described in the synopsis. The
+arguments have the following meaning:
+
+=over
+
+=item Directory, DirLevels
+
+Compare the desription in L<Apache::Session::TreeStore>.
+
+=item CounterFile
+
+A filename to be used by the File::CounterFile module. By changing
+that file or the filename periodically, you can achieve arbitrary
+patterns of key generation.
+
+=item AlwaysSave
+
+A boolean which, if true, forces storing of session data in any case.
+If false, only a STORE, DELETE or CLEAR trigger that the session file
+will be written when the tied hash goes out of scope. This has the
+advantage that you can retrieve an old session without storing its
+state again.
+
+=back
+
+=head2 What this model buys you
 
 =over
 
@@ -159,10 +188,10 @@ What this model buys you, is the following:
 You need not store session data for each and every request of a
 particular user. There are so many CGI requests that can easily be
 handled with two hidden fields and do not need any session support on
-the server, and there are others where you definitely want session
-support. Both can appear within the same application. Counted allows
-you to switch session writing on and off during your application
-without much thinking.
+the server side, and there are others where you definitely need
+session support. Both can appear within the same application.
+Apache::Session::Counted allows you to switch session writing on and
+off during your application without much effort.
 
 =item counter
 
@@ -174,21 +203,33 @@ File::CounterFile (because it B<is> File::CounterFile).
 Your data storage area cleans up itself automatically. Whenever you
 reset your counter via File::CounterFile, the storage area in use is
 being reused. Old files are being overwritten in the same order they
-were written.
+were written, giving you a lot of flexibility to control session
+storage time and session storage disk space.
 
 =item performance
 
 Additionally the notion of daisy-chained sessions simplifies the code
-of the session handler itself quite a bit and it is quite likely that
-this simplification results in an improved performance. There are less
-file stats and less sections that need locking.
+of the session handler itself a bit and it is quite likely that this
+simplification results in an improved performance. There are less file
+stats and less sections that need locking.
 
 =back
 
 As with other modules in the Apache::Session collection, the tied hash
 contains a key <_session_id>. You must be aware that the value of this
 hash entry is not the same as the one you passed in. So make sure that
-you send your user the new session-id in your forms, not the old one.
+you send your users a new session-id in each response, not the old one.
+
+As an implemenation detail it may be of interest to you, that the
+session ID in Apache::Session::Counted consists of two parts: an
+ordinary number which is a simple counter and a session-ID like the
+one in Apache::Session. The two parts are concatenated by an
+underscore. The first part is used as an identifier of the session and
+the second part is used as a one-time password. The first part is
+easily predictable, but the second part is as unpredictable as
+Apache::Session's session ID. We use the first part for implementation
+details like storage on the disk and the second part to verify the
+ownership of that token.
 
 =head1 PREREQUISITES
 
