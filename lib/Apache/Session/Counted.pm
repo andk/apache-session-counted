@@ -72,8 +72,7 @@ sub TIEHASH {
   my $self = {
 	      args         => $args,
 
-	      # no need to fill in what will be changed anyway:
-	      # data         => { _session_id => $session_id },
+	      data         => { _session_id => $session_id },
 	      # we always have read and write lock:
 
 	      lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
