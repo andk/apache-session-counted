@@ -4,7 +4,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -68,15 +68,17 @@ sub TIEHASH {
   #of our class
 
   my $self = {
-             args         => $args,
+              args         => $args,
 
-             data         => { _session_id => $session_id },
-             # we always have read and write lock:
-
-             lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
-             lock_manager => undef,
-             object_store => undef,
-             status       => 0,
+              data         => { _session_id => $session_id },
+              # we always *have* read and write lock and need not care
+              lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
+              status       => 0,
+              lock_manager => undef, # These two are object refs
+              object_store => undef,
+              generate     => undef,  # but these three are subroutine refs
+              serialize    => undef,
+              unserialize  => undef,
             };
 
   bless $self, $class;
@@ -118,7 +120,10 @@ sub generate_id {
   my $rhexid = sprintf "%08x", $c->inc;
   my $hexid = scalar reverse $rhexid; # optimized for treestore. Not
                                       # everything in one directory
-  my $password = $self->SUPER::generate_id;
+
+  # we have entropy as bad as rand(). Typically not very good.
+  my $password = sprintf "%d%d", rand(0xffffffff), rand(0xffffffff);
+
   $hexid . "_" . $password;
 }
 
@@ -136,6 +141,14 @@ Apache::Session::Counted - Session management via a File::CounterFile
                                 CounterFile => <filename for File::CounterFile>,
                                 AlwaysSave => <boolean>
                                                  }
+
+=head1 ALPHA CODE ALERT
+
+This module is a proof of concept, not a final implementaion. There
+was very little interest in this module, so it is unlikely that I will
+invest much more work. If you find it useful and are interested in
+further development, please contact me personally, so we can talk
+about future development.
 
 =head1 DESCRIPTION
 
