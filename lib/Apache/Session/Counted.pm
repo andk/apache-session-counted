@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.24 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 20:29:09 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.111 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 23:13:40 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -277,7 +277,9 @@ In Apache::Session::Counted, a session-ID only lasts from one request
 to the next at which point a new session-ID is computed by the
 File::CounterFile module. Thus what you have to treat differently than
 in Apache::Session are those parts that rely on the session-ID as a
-fixed token per user. Everything else remains the same.
+fixed token per user. Accordingly, there is no option to delete a
+session. The remove method is simply disabled as old session data will
+be overwritten as soon as the counter is reset to zero.
 
 The usage of the module is via a tie as described in the synopsis. The
 arguments have the following meaning:
@@ -394,13 +396,32 @@ has stored the data--may be useful in clusters.
 
 =head1 PREREQUISITES
 
-Apache::Session::Counted needs Apache::Session,
-Apache::Session::TreeStore, and File::CounterFile, all available from the CPAN.
+Apache::Session::Counted needs Apache::Session and File::CounterFile,
+all available from the CPAN.
 
 =head1 EXAMPLES
 
-XXX Two examples should show the usage of a date string and the usage
-of an external cronjob to influence counter and cleanup.
+The following example resets the counter every 24 hours and keeps the
+totals of every day as a side effect:
+
+  my(@t) = localtime;
+  tie %session, 'Apache::Session::Counted', $sid,
+  {
+   Directory => ...,
+   DirLevels => ...,
+   CounterFile => sprintf("/some/dir/%04d-%02d-%02d", $t[5]+1900,$t[4]+1,$t[3])
+  };
+
+
+The same effect can be accomplished with a fixed filename and an
+external cronjob that resets the counter like so:
+
+  use File::CounterFile;
+  $c=File::CounterFile->new("/usr/local/apache/data/perl/sessiondemo/counter");
+  $c->lock;
+  $c-- while $c>0;
+  $c->unlock;
+
 
 =head1 AUTHOR
 
@@ -408,9 +429,9 @@ Andreas Koenig <andreas.koenig@anima.de>
 
 =head1 COPYRIGHT
 
-This software is copyright(c) 1999 Andreas Koenig. It is free software
-and can be used under the same terms as perl, i.e. either the GNU
-Public Licence or the Artistic License.
+This software is copyright(c) 1999,2000 Andreas Koenig. It is free
+software and can be used under the same terms as perl, i.e. either the
+GNU Public Licence or the Artistic License.
 
 =cut
 
