@@ -1,0 +1,7 @@
+ChangeLog
+MANIFEST
+Makefile.PL
+README
+lib/Apache/Session/Counted.pm
+lib/Apache/Session/Tree.pm
+lib/Apache/Session/TreeStore.pm
