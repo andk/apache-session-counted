@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 09:49:58 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.20 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 09:50:57 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -75,7 +75,7 @@ I'm trying to band-aid by creating this directory";
       require Dumpvalue;
       my $dumper = Dumpvalue->new;
       $dumper->set(unctrl => "quote");
-      warn sprintf "content[%s]", substr($dumper->stringify($content),0,80);
+      warn sprintf "content[%s]", $dumper->stringify($content);
     }
 
     warn "calling storefilename from materialize";
