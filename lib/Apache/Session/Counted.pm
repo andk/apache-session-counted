@@ -4,8 +4,9 @@ use Apache::Session::Serialize::Storable;
 use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
-use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
+use vars qw($VERSION $RELEASE_DATE);
+$VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 06:23:45 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -24,13 +25,23 @@ use File::CounterFile;
     my $session = shift;
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
-    open $fh, ">$storefile\0" or
-      die "Could not open file $storefile for writing: $!
+    unless ( open $fh, ">$storefile\0" ) {
+      warn "Could not open file $storefile for writing: $!
 Maybe you haven't initialized the storage directory with
-use Apache::Session::Counted;
-Apache::Session::CountedStore->tree_init(\$dir,\$levels)";
-    print $fh $session->{serialized}; # $fh->print might fail in some perls
-    close $fh;
+ use Apache::Session::Counted;
+ Apache::Session::CountedStore->tree_init(\$dir,\$levels);
+I'm trying to band-aid by creating this directory";
+      require File::Basename;
+      my $dir = File::Basename::dirname($storefile);
+      require File::Path;
+      File::Path::mkpath($dir);
+    }
+    if ( open $fh, ">$storefile\0" ) {
+      print $fh $session->{serialized}; # $fh->print might fail in some perls
+      close $fh;
+    } else {
+      die "Giving up. Could not open file $storefile for writing: $!"
+    }
   }
   *insert = \&update;
 
@@ -40,17 +51,23 @@ Apache::Session::CountedStore->tree_init(\$dir,\$levels)";
     my $session = shift;
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
-    open $fh, "<$storefile\0" or
-        die "Could not open file $storefile for reading: $!";
-    local $/;
-    $session->{serialized} = <$fh>;
-    close $fh or die $!;
+    if ( open $fh, "<$storefile\0" ) {
+      local $/;
+      $session->{serialized} = <$fh>;
+      close $fh or die $!;
+    } else {
+      warn "Could not open file $storefile for reading: $!";
+      $session->{serialized} = $session->{serialize}->(undef);
+    }
   }
 
   sub remove {
+    warn "remove not implemented"; # doesn't make sense for our
+                                   # concept of a session
+    return;
+
     my $self    = shift;
     my $session = shift;
-    my $storefile = $self->storefilename($session);
     unlink $storefile or
         warn "Object $storefile does not exist in the data store";
   }
@@ -93,7 +110,8 @@ Apache::Session::CountedStore->tree_init(\$dir,\$levels)";
     my $dir = $session->{args}{Directory};
     my $levels = $session->{args}{DirLevels} || 0;
     # here we depart from TreeStore:
-    my($file) = $session->{data}{_session_id} =~ /^([\da-f]+)/;
+    my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
+    my($file) = $sessionID =~ /^([\da-f]+)/;
     die "Too short ID part '$file' in session ID'" if length($file)<8;
     while ($levels) {
       $file =~ s|((..){$levels})|$1/|;
@@ -151,7 +169,7 @@ sub TIEHASH {
 
   if (defined $session_id) {
     $self->make_old;
-    $self->restore;
+    $self->restore; # calls materialize and unserialize via Apache::Session
     if ($session_id eq $self->{data}->{_session_id}) {
       # Fine. Validated. Kind of authenticated.
       # ready for a new session ID, keeping state otherwise.
@@ -187,7 +205,11 @@ sub generate_id {
   # we have entropy as bad as rand(). Typically not very good.
   my $password = sprintf "%08x%08x", rand(0xffffffff), rand(0xffffffff);
 
-  $hexid . "_" . $password;
+  if (exists $self->{args}{HostID}) {
+    return sprintf "%s:%s_%s", $self->{args}{HostID}, $hexid, $password;
+  } else {
+    return $hexid . "_" . $password;
+  }
 }
 
 1;
@@ -205,27 +227,29 @@ Apache::Session::Counted - Session management via a File::CounterFile
                                 AlwaysSave => <boolean>
                                                  }
 
-=head1 ALPHA CODE ALERT
-
-This module is a proof of concept, not a final implementaion. There
-was very little interest in this module, so it is unlikely that I will
-invest much more work. If you find it useful and are interested in
-further development, please contact me personally, so we can talk
-about future development.
-
 =head1 DESCRIPTION
 
 This session module is based on Apache::Session, but it persues a
 different notion of a session, so you probably have to adjust your
 expectations a little.
 
-A session in this module only lasts from one request to the next. At
-that point a new session starts. Data are not lost though, the only
-thing that is lost from one request to the next is the session-ID. So
-the only things you have to treat differently than in Apache::Session
-are those parts that rely on the session-ID as a fixed token per user.
-Everything else remains the same. See below for a discussion what this
-model buys you.
+The dialog that is implemented within an HTTP based application is a
+nonlinear chain of events. The user can decide to use the back button
+at any time without informing the application about it. A proper
+session management must be prepared for this and must maintain the
+state of every single event. For handling the notion of a session and
+the notion of a registered user, the application has to differentiate
+carefully between global state of user data and a user's session
+related state. Some data may expire after a day, others may be
+regarded as unexpirable. This module is solely responsible for
+handling session related data. Saving unexpirable user related data
+must be handled by the calling application.
+
+In Apache::Session::Counted, a session-ID only lasts from one request
+to the next at which point a new session-ID is computed by the
+File::CounterFile module. Thus what you have to treat differently than
+in Apache::Session are those parts that rely on the session-ID as a
+fixed token per user. Everything else remains the same.
 
 The usage of the module is via a tie as described in the synopsis. The
 arguments have the following meaning:
@@ -250,6 +274,19 @@ If false, only a STORE, DELETE or CLEAR trigger that the session file
 will be written when the tied hash goes out of scope. This has the
 advantage that you can retrieve an old session without storing its
 state again.
+
+=item HostID
+
+A string that serves as an identifier for the host we are running on.
+This string will become part of the session-ID and must not contain a
+colon. This can be used in a cluster environment so that a load
+balancer or other interested parties can retrieve the session data
+again.
+
+=item BadHostCallback
+
+A subroutine reference that gets called whenever the Session-ID we get
+doesn't match the HostID. The subroutine must return the 
 
 =back
 
