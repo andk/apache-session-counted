@@ -13,7 +13,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw( $VERSION);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -191,7 +191,17 @@ handled with two hidden fields and do not need any session support on
 the server side, and there are others where you definitely need
 session support. Both can appear within the same application.
 Apache::Session::Counted allows you to switch session writing on and
-off during your application without much effort.
+off during your application without effort. (In fact, this advantage
+is shared with the clean persistence model of Apache::Session)
+
+=item keeping track of transactions
+
+As each request of a single user remains stored until you restart the
+counter, there are all previous states of a single session close at
+hand. The user presses the back button 5 times and changes a decision
+and simply opens a new branch of the same session. This can be an
+advantage and a disadvantage. I tend to see it as a very strong
+feature. Your milage may vary.
 
 =item counter
 
@@ -208,10 +218,12 @@ storage time and session storage disk space.
 
 =item performance
 
-Additionally the notion of daisy-chained sessions simplifies the code
-of the session handler itself a bit and it is quite likely that this
-simplification results in an improved performance. There are less file
-stats and less sections that need locking.
+The notion of daisy-chained sessions simplifies the code of the
+session handler itself quite a bit and it is likely that this
+simplification results in an improved performance (not tested yet due
+to lack of benchmarking apps for sessions). There are less file stats
+and less sections that need locking, but without real world figures,
+it's hard to tell what's up.
 
 =back
 
