@@ -1,19 +1,10 @@
-#############################################################################
-#
-# Apache::Session::Tree
-# Apache persistent user sessions in the filesystem
-# Copyright(c) 1998, 1999 Jeffrey William Baker (jeffrey@kathyandjeffrey.net)
-# Distribute under the Artistic License
-#
-############################################################################
-
 package Apache::Session::Counted;
 
 use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw( $VERSION);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /(\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -47,6 +38,10 @@ use File::CounterFile;
 sub get_object_store {
   my $self = shift;
   return new Apache::Session::CountedStore $self;
+}
+
+sub release_all_locks {
+  return;
 }
 
 sub get_lock_manager {
