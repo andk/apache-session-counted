@@ -5,7 +5,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.8 $ =~ /(\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -15,7 +15,6 @@ use File::CounterFile;
   use Symbol qw(gensym);
 
   use strict;
-  use Storable qw(nstore_fd retrieve_fd);
 
   sub new { bless {}, shift }
 
@@ -52,7 +51,8 @@ Apache::Session::CountedStore->tree_init(\$dir,\$levels)";
     my $self    = shift;
     my $session = shift;
     my $storefile = $self->storefilename($session);
-    unlink $storefile or warn "Object $storefile does not exist in the data store";
+    unlink $storefile or
+        warn "Object $storefile does not exist in the data store";
   }
 
   sub tree_init {
@@ -137,8 +137,8 @@ sub TIEHASH {
               # we always *have* read and write lock and need not care
               lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
               status       => 0,
-              lock_manager => undef, # These two are object refs
-              generate     => undef,  # but these three are subroutine refs
+              lock_manager => undef,
+              generate     => undef,
               serialize    => \&Apache::Session::Serialize::Storable::serialize,
               unserialize  => \&Apache::Session::Serialize::Storable::unserialize,
             };
