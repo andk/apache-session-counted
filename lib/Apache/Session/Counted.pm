@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.112 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 23:15:07 $;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.113 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 23:23:18 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -319,8 +319,8 @@ A callback that returns the service URL that can be called to get at
 the session data from another host. This is needed in a cluster
 environment. Two arguments are passed to this callback: HostID and
 Session-ID. The URL must return the serialized data in Storable's
-nfreeze format. The Apache::Session::Counted::Server module can be
-used to set such an URL up. If HostURL is not defined, the default is
+nfreeze format. The Apache::Session::Counted module can be used to set
+such an URL up. If HostURL is not defined, the default is
 
     sprintf "http://%s/?SESSIONID=%s", <host>, <session-ID>;
 
@@ -383,21 +383,20 @@ that this is never the old one.
 
 As an implemenation detail it may be of interest to you, that the
 session ID in Apache::Session::Counted consists of two or three parts:
-an ordinary number which is a simple counter and a session-ID like the
-one in Apache::Session. The two parts are concatenated by an
-underscore. The first part is used as an identifier of the session and
-the second part is used as a password. The first part is easily
-predictable, but the second part is as unpredictable as
-Apache::Session's session ID. We use the first part for implementation
-details like storage on the disk and the second part to verify the
-ownership of that token. There may be soon available support for a
-third part. That which codes an alias for the machine that actually
-has stored the data--may be useful in clusters.
+an optional host alias given by the HostID paramter, followed by a
+colon. Then an ordinary number which is a simple counter which is
+followed by an underscore. And finally a session-ID like the one in
+Apache::Session. The number part is used as an identifier of the
+session and the ID part is used as a password. The number part is
+easily predictable, but the second part is reasonable unpredictable.
+We use the first part for implementation details like storage on the
+disk and the second part to verify the ownership of that token.
 
 =head1 PREREQUISITES
 
 Apache::Session::Counted needs Apache::Session and File::CounterFile,
-all available from the CPAN.
+all available from the CPAN. The HostID and HostURL paramters for a
+cluster solution need LWP installed.
 
 =head1 EXAMPLES
 
