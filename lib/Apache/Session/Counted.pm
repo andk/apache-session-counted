@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.15 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 08:11:36 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 09:28:39 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -23,6 +23,7 @@ use File::CounterFile;
   sub update {
     my $self    = shift;
     my $session = shift;
+    warn "calling storefilename from update";
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
     unless ( open $fh, ">$storefile\0" ) {
@@ -49,7 +50,12 @@ I'm trying to band-aid by creating this directory";
   sub materialize {
     my $self    = shift;
     my $session = shift;
-    my $storefile = $self->storefilename($session);
+    warn "calling storefilename from materialize";
+    my $storefile = eval { $self->storefilename($session) };
+    if ($@) {
+      warn "Caught exception $@";
+      return;
+    }
     my $fh = gensym;
     if ( open $fh, "<$storefile\0" ) {
       local $/;
@@ -114,20 +120,29 @@ I'm trying to band-aid by creating this directory";
     # here we depart from TreeStore:
     my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
     my($host,$file) = $sessionID =~ /(?:([^:]+)(?::))?([\da-f]+)/;
-    if ($host) {
-      if ($session->{args}{HostID} eq $host) {
+    if ($host && $session->{args}{HostID}) {
+      if (0 && $session->{args}{HostID} eq $host) {
         # warn "HostID matches us";
       } else {
-        warn sprintf("Foreign HostID not yet implemented. hostID[%s]host[%s]",
+        warn sprintf("configured hostID[%s]host from argument[%s]",
                      $session->{args}{HostID},
                      $host);
         my $surl;
         if (exists $session->{args}{HostURL}) {
           $surl = $session->{args}{HostURL}->($host,$sessionID);
         } else {
-          $surl = sprintf "http://%s/?SESSIONID=%s", $host, $session_id;
+          $surl = sprintf "http://%s/?SESSIONID=%s", $host, $sessionID;
         }
         warn "surl[$surl]";
+        require LWP::UserAgent;
+        require HTTP::Request::Common;
+        my $ua = LWP::UserAgent->new;
+        my $req = HTTP::Request::Common::GET $surl;
+        my $content = $ua->request($req)->content;
+        require Dumpvalue;
+        my $dumper = Dumpvalue->new;
+        $dumper->set(unctrl => "quote");
+        warn sprintf "content[%s]", substr($dumper->stringify($content),0,80);
       }
     }
     die "Too short ID part '$file' in session ID'" if length($file)<8;
@@ -304,13 +319,13 @@ again.
 =item HostURL
 
 A callback that returns the service URL that can be called to get at
-the session data from another host. Two arguments are passed to this
-callback: HostID and Session-ID. The URL must return the serialized
-data in Storable's nfreeze format. The
-Apache::Session::Counted::Server module can be used to set such an URL
-up. If HostURL is not defined, the default is
+the session data from another host. This is needed in a cluster
+environment. Two arguments are passed to this callback: HostID and
+Session-ID. The URL must return the serialized data in Storable's
+nfreeze format. The Apache::Session::Counted::Server module can be
+used to set such an URL up. If HostURL is not defined, the default is
 
-    sprintf "http://%s/?SESSIONID=%s", $host, $session_id;
+    sprintf "http://%s/?SESSIONID=%s", <host>, <session-ID>;
 
 =back
 
