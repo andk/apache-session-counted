@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 10:12:48 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.23 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 10:30:47 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -23,7 +23,6 @@ use File::CounterFile;
   sub update {
     my $self    = shift;
     my $session = shift;
-    warn "calling storefilename from update";
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
     unless ( open $fh, ">$storefile\0" ) {
@@ -75,7 +74,6 @@ I'm trying to band-aid by creating this directory";
       $content = $ua->request($req)->content;
     }
 
-    warn "calling storefilename from materialize";
     my $storefile = $self->storefilename($session);
     my $fh = gensym;
     if ( open $fh, "<$storefile\0" ) {
