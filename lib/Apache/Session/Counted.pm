@@ -3,8 +3,8 @@ package Apache::Session::Counted;
 use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
-use vars qw( $VERSION);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/;
+use vars qw($VERSION);
+$VERSION = sprintf "%d.%02d", q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/;
 
 use Apache::Session;
 use File::CounterFile;
@@ -21,7 +21,7 @@ use File::CounterFile;
     my $self    = shift;
     my $session = shift;
     die "The argument 'Directory' for object storage must be passed as an argument"
-	unless defined $session->{args}{Directory};
+       unless defined $session->{args}{Directory};
     my $dir = $session->{args}{Directory};
     my $levels = $session->{args}{DirLevels} || 0;
     # here we depart from TreeStore:
@@ -40,14 +40,16 @@ sub get_object_store {
   return new Apache::Session::CountedStore $self;
 }
 
+# Counted is locked by definition
 sub release_all_locks {
   return;
 }
 
-sub get_lock_manager {
-  require Carp;
-  Carp::confess "Should never be reached";
-}
+*get_lock_manager = \&release_all_locks;
+*release_read_lock = \&release_all_locks;
+*release_write_lock = \&release_all_locks;
+*acquire_read_lock = \&release_all_locks;
+*acquire_write_lock = \&release_all_locks;
 
 sub TIEHASH {
   my $class = shift;
@@ -66,16 +68,16 @@ sub TIEHASH {
   #of our class
 
   my $self = {
-	      args         => $args,
+             args         => $args,
 
-	      data         => { _session_id => $session_id },
-	      # we always have read and write lock:
+             data         => { _session_id => $session_id },
+             # we always have read and write lock:
 
-	      lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
-	      lock_manager => undef,
-	      object_store => undef,
-	      status       => 0,
-	     };
+             lock         => Apache::Session::READ_LOCK|Apache::Session::WRITE_LOCK,
+             lock_manager => undef,
+             object_store => undef,
+             status       => 0,
+            };
 
   bless $self, $class;
 
@@ -126,7 +128,7 @@ sub generate_id {
 
 Apache::Session::Counted - Session management via a File::CounterFile
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
  tie %s, 'Apache::Session::Counted', $sessionid, {
                                 Directory => <root of directory tree>,
