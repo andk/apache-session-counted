@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.21 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 10:09:13 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 10:12:48 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -56,7 +56,7 @@ I'm trying to band-aid by creating this directory";
 
     if ($host &&
         $session->{args}{HostID} &&
-        $session->{args}{HostID} eq $host # testing!
+        $session->{args}{HostID} ne $host
        ) {
       warn sprintf("configured hostID[%s]host from argument[%s]",
                    $session->{args}{HostID},
