@@ -5,8 +5,8 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.20 $ =~ /(\d+)\.(\d+)/;
-$RELEASE_DATE = q$Date: 2000/10/31 09:50:57 $;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.21 $ =~ /(\d+)\.(\d+)/;
+$RELEASE_DATE = q$Date: 2000/10/31 10:09:13 $;
 
 use Apache::Session;
 use File::CounterFile;
@@ -52,6 +52,7 @@ I'm trying to band-aid by creating this directory";
     my $session = shift;
     my $sessionID = $session->{data}{_session_id} or die "Got no session ID";
     my($host) = $sessionID =~ /(?:([^:]+)(?::))/;
+    my($content);
 
     if ($host &&
         $session->{args}{HostID} &&
@@ -71,11 +72,7 @@ I'm trying to band-aid by creating this directory";
       require HTTP::Request::Common;
       my $ua = LWP::UserAgent->new;
       my $req = HTTP::Request::Common::GET $surl;
-      my $content = $ua->request($req)->content;
-      require Dumpvalue;
-      my $dumper = Dumpvalue->new;
-      $dumper->set(unctrl => "quote");
-      warn sprintf "content[%s]", $dumper->stringify($content);
+      $content = $ua->request($req)->content;
     }
 
     warn "calling storefilename from materialize";
@@ -85,6 +82,15 @@ I'm trying to band-aid by creating this directory";
       local $/;
       $session->{serialized} = <$fh>;
       close $fh or die $!;
+      if ($content && $content ne $session->{serialized}) {
+        warn "content and serialized are NOT equal";
+        require Dumpvalue;
+        my $dumper = Dumpvalue->new;
+        $dumper->set(unctrl => "quote");
+        warn sprintf "content[%s]serialized[%s]",
+            $dumper->stringify($content),
+                $dumper->stringify($session->{serialized});
+      }
     } else {
       warn "Could not open file $storefile for reading: $!";
       $session->{data} = {};
