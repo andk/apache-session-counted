@@ -5,7 +5,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Apache::Session);
 use vars qw($VERSION $RELEASE_DATE);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.118 $ =~ /(\d+)\.(\d+)/;
+$VERSION = '1.119';
 $RELEASE_DATE = q$Date: 2002/04/15 12:39:07 $;
 
 use Apache::Session 1.50;
