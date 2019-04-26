@@ -127,9 +127,9 @@ I'm trying to band-aid by creating this directory};
     my $dir = shift;
     my $levels = shift;
     my $n = 0x100 ** $levels;
-    warn "A:S:Counted: Creating directory $dir
- and $n subdirectories in $levels level(s)\n";
-    warn "A:S:Counted: This may take a while\n" if $levels>1;
+#    warn "A:S:Counted: Creating directory $dir
+# and $n subdirectories in $levels level(s)\n";
+#    warn "A:S:Counted: This may take a while\n" if $levels>1;
     require File::Path;
     $|=1;
     my $feedback =
